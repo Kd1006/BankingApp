@@ -17,6 +17,8 @@ public static final String INSUFFICIENT_BALANCE_CODE = "006";
 public static final String INSUFFICIENT_BALANCE_MESSAGE = "Insufficient Value";
 public static final String ACCOUNT_DEBITED_SUCCESSFULLY = " 007 ";
 public static final String ACCOUNT_DEBITED_SUCCESSFULLY_MESSAGE = "Account has been debited successfully";
+public static final String TRANSFER_SUCCESSFUL_CODE = "008";
+public static final String TRANSFER_SUCCESSFUL_MESSAGE = "Transfer successful";
 
 
     public  static String generatedAccountNumber (){
