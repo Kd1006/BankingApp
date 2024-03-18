@@ -29,6 +29,12 @@ public class UserController {
     public BankResponse createAccount(@RequestBody UserRequest userRequest) {
         return userService.createAccount(userRequest);
     }
+    @PostMapping("login")
+    public BankResponse login(@RequestBody LoginDto loginDto){
+        return userService.login(loginDto);
+
+    }
+
     @Operation(
             summary = "Balance Enquiry",
             description = "Given an account number, shows the current balance "
@@ -50,11 +56,11 @@ public class UserController {
 
     }
 
-    @PostMapping("/credit")
+    @PostMapping("credit")
     public BankResponse creditAccount(@RequestBody CreditDebitRequest request) {
         return userService.creditAccount(request);
     }
-    @PostMapping("/debit")
+    @PostMapping("debit")
     public BankResponse debitAccount(@RequestBody CreditDebitRequest request){
         return  userService.debitAccount(request);
     }

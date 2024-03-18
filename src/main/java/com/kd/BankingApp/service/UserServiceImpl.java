@@ -1,22 +1,47 @@
 package com.kd.BankingApp.service;
 
+import com.kd.BankingApp.config.JwtService;
 import com.kd.BankingApp.dto.*;
+import com.kd.BankingApp.entities.Role;
 import com.kd.BankingApp.entities.User;
 import com.kd.BankingApp.repository.UserRepository;
 import com.kd.BankingApp.utils.AccountUtils;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @Service
+@AllArgsConstructor
+
+
 public class UserServiceImpl implements UserService {
 
     @Autowired
     UserRepository userRepository;
     @Autowired
     EmailService emailService;
+    @Autowired
+    TransactionService transactionService;
+    @Autowired
+    PasswordEncoder passwordEncoder;
+    @Autowired
+    AuthenticationManager authenticationManager;
+    @Autowired
+    JwtService jwtTokenProvider;
+
+
+    public UserServiceImpl() {
+
+    }
+
 
     @Override
     public BankResponse createAccount(UserRequest userRequest) {
@@ -39,10 +64,12 @@ public class UserServiceImpl implements UserService {
                 .stateOfOrigin(userRequest.getStateOfOrigin())
                 .accountNumber(AccountUtils.generatedAccountNumber())
                 .accountBalance(BigDecimal.ZERO)
+                .email(userRequest.getEmail())
+                .password(passwordEncoder.encode(userRequest.getPassword()))
                 .phoneNumber(userRequest.getPhoneNumber())
                 .alternativePhoneNumber(userRequest.getAlternativePhoneNumber())
                 .status("ACTIVE")
-                .email(userRequest.getEmail())
+                .role(Role.valueOf("ROLE_ADMIN"))
                 .build();
 
         User savedUser = userRepository.save(newUser);
@@ -67,6 +94,35 @@ public class UserServiceImpl implements UserService {
 
                 .build();
     }
+
+    public BankResponse login(LoginDto loginDto) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
+            );
+
+            String token = JwtService.generateToken(loginDto.getEmail());
+
+            EmailDetails loginAlert = EmailDetails.builder()
+                    .subject("You're logged in to your account.")
+                    .recipient(loginDto.getEmail())
+                    .messageBody("You logged into your account. If you did not initiate this request, please contact your bank")
+                    .build();
+            emailService.sendEmailAlert(loginAlert);
+
+            return BankResponse.builder()
+                    .responseCode("Login Success")
+                    .responseMessage(token)
+                    .build();
+        } catch (AuthenticationException e) {
+            // Handle authentication failure
+            return BankResponse.builder()
+                    .responseCode("Login Failed")
+                    .responseMessage("Invalid email or password")
+                    .build();
+        }
+    }
+
 
     @Override
     public BankResponse balanceEnquiry(EnquiryRequest request) {
@@ -117,6 +173,15 @@ public class UserServiceImpl implements UserService {
         userToCredit.setAccountBalance(userToCredit.getAccountBalance().add(request.getAmount()));
         userRepository.save(userToCredit);
         // we're adding 2 big decimal value ,one from user class, other one created in CreditDebitRequest
+
+        //Saving Transaction
+        TransactionDto transactionDto = TransactionDto.builder()
+                .accountNumber(userToCredit.getAccountNumber())
+                .transactionType("CREDIT")
+                .amount(request.getAmount())
+                .build();
+        transactionService.saveTransaction(transactionDto);
+
         return BankResponse.builder()
                 .responseCode(AccountUtils.ACCOUNT_CREDITED_SUCCESS)
                 .responseMessage(AccountUtils.ACCOUNT_CREDITED_SUCCESS_MESSAGE)
@@ -126,7 +191,6 @@ public class UserServiceImpl implements UserService {
                         .accountNumber(request.getAccountNumber())
                         .build())
                 .build();
-
     }
 
     @Override
@@ -155,6 +219,13 @@ public class UserServiceImpl implements UserService {
         } else {
             userToDebit.setAccountBalance(userToDebit.getAccountBalance().subtract(request.getAmount()));
             userRepository.save(userToDebit);
+            TransactionDto transactionDto = TransactionDto.builder()
+                    .accountNumber(userToDebit.getAccountNumber())
+                    .transactionType("CREDIT")
+                    .amount(request.getAmount())
+                    .build();
+
+            transactionService.saveTransaction(transactionDto);
             return BankResponse.builder()
                     .responseCode(AccountUtils.ACCOUNT_DEBITED_SUCCESSFULLY)
                     .responseMessage(AccountUtils.ACCOUNT_DEBITED_SUCCESSFULLY_MESSAGE)
@@ -165,8 +236,6 @@ public class UserServiceImpl implements UserService {
                             .build())
                     .build();
         }
-
-
     }
 
     @Override
@@ -185,23 +254,20 @@ public class UserServiceImpl implements UserService {
                     .build();
         }
         User sourceAccountUser = userRepository.findByAccountNumber(request.getSourceAccountNumber());
-        if (request.getAmount().compareTo(sourceAccountUser.getAccountBalance())>0){
+        if (request.getAmount().compareTo(sourceAccountUser.getAccountBalance()) > 0) {
             return BankResponse.builder()
                     .responseCode(AccountUtils.INSUFFICIENT_BALANCE_CODE)
                     .responseMessage(AccountUtils.INSUFFICIENT_BALANCE_MESSAGE)
                     .accountInfo(null)
                     .build();
-
-
-
         }
         sourceAccountUser.setAccountBalance(sourceAccountUser.getAccountBalance().subtract(request.getAmount()));
-        String sourceUsername = sourceAccountUser.getFirstName()+ sourceAccountUser.getLastName() + sourceAccountUser.getOtherName();
+        String sourceUsername = sourceAccountUser.getFirstName() + sourceAccountUser.getLastName() + sourceAccountUser.getOtherName();
         userRepository.save(sourceAccountUser);
         EmailDetails debitAlert = EmailDetails.builder()
                 .subject("Email Alert")
                 .recipient(sourceAccountUser.getEmail())
-                .messageBody("The sum of " + request.getAmount()+ "has been withdrawn from your account. Your current balance is " + sourceAccountUser.getAccountBalance())
+                .messageBody("The sum of " + request.getAmount() + "has been withdrawn from your account. Your current balance is " + sourceAccountUser.getAccountBalance())
                 .build();
         emailService.sendEmailAlert(debitAlert);
 
@@ -213,9 +279,16 @@ public class UserServiceImpl implements UserService {
         EmailDetails creditAlert = EmailDetails.builder()
                 .subject("Credit Alert")
                 .recipient(destinationAccountUser.getEmail())
-                .messageBody("The sum of " + request.getAmount() + " has been sent to your account from" + sourceUsername +" Your current balance is " + destinationAccountUser.getAccountBalance())
+                .messageBody("The sum of " + request.getAmount() + " has been sent to your account from" + sourceUsername + " Your current balance is " + destinationAccountUser.getAccountBalance())
                 .build();
-        emailService.sendEmailAlert(debitAlert);
+        emailService.sendEmailAlert(creditAlert);
+
+        TransactionDto transactionDto = TransactionDto.builder()
+                .accountNumber(destinationAccountUser.getAccountNumber())
+                .transactionType("CREDIT")
+                .amount(request.getAmount())
+                .build();
+        transactionService.saveTransaction(transactionDto);
 
         return BankResponse.builder()
                 .responseCode(AccountUtils.TRANSFER_SUCCESSFUL_CODE)
@@ -225,4 +298,11 @@ public class UserServiceImpl implements UserService {
 
     }
 
+//    public static void main(String[] args) {
+//        UserServiceImpl userService = new UserServiceImpl();
+//
+//        System.out.println(userService.passwordEncoder.encode("1234"));
+//    }
 }
+
+

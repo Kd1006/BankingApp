@@ -7,14 +7,14 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-
-@Data
 @Builder
 @AllArgsConstructor
+@Data
 @NoArgsConstructor
-public class CreditDebitRequest {
-    private String accountNumber;
+public class TransactionDto {
+    private String transactionType;
     private BigDecimal amount;
+    private String accountNumber;
+    private String status;
 
 }
-
