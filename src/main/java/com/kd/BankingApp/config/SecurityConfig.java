@@ -1,5 +1,6 @@
 package com.kd.BankingApp.config;
 
+import com.kd.BankingApp.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +17,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -28,34 +30,21 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @AllArgsConstructor
 public class SecurityConfig  {
     private UserDetailsService userDetailsService;
+    @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Autowired
+    private AuthenticationProvider authenticationProvider;
 
-  @Bean
-    public PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder();
 
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-      return configuration.getAuthenticationManager();
-  }
-  @Bean
-  public AuthenticationProvider authenticationProvider() {
-      DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-      authenticationProvider.setUserDetailsService(userDetailsService);
-      authenticationProvider.setPasswordEncoder(passwordEncoder());
-      return authenticationProvider;
-  }
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize->
-                        authorize.requestMatchers(HttpMethod.POST, "/api/user").permitAll()
+                        authorize.requestMatchers(HttpMethod.POST, "/api/user/**").permitAll()
 
                                 .anyRequest().authenticated());
         httpSecurity.sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        httpSecurity.authenticationProvider(authenticationProvider());
+        httpSecurity.authenticationProvider(authenticationProvider);
         httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return httpSecurity.build();
 

@@ -1,4 +1,4 @@
-package com.kd.BankingApp.service;
+/*package com.kd.BankingApp.service;
 
 import com.kd.BankingApp.repository.UserRepository;
 import lombok.AllArgsConstructor;
@@ -16,4 +16,4 @@ public class CustomUserDetailService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByEmail(username).orElseThrow(()->new UsernameNotFoundException(username + "not found"));
     }
-}
+}*/

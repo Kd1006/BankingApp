@@ -7,6 +7,8 @@ import com.kd.BankingApp.entities.User;
 import com.kd.BankingApp.repository.UserRepository;
 import com.kd.BankingApp.utils.AccountUtils;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,6 +38,8 @@ public class UserServiceImpl implements UserService {
     AuthenticationManager authenticationManager;
     @Autowired
     JwtService jwtTokenProvider;
+
+    private final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
 
     public UserServiceImpl() {
@@ -96,20 +100,24 @@ public class UserServiceImpl implements UserService {
     }
 
     public BankResponse login(LoginDto loginDto) {
+        logger.info(loginDto.toString());
+        logger.info("KD:l103:login:UserServiceImpl:entering login");
         try {
-            Authentication authentication = authenticationManager.authenticate(
+            logger.info("KD:l105:login:UserServiceImpl:Attempting Auth");
+            authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
             );
-
+            logger.info("KD:l109:login:UserServiceImpl:Auth Successful");
             String token = JwtService.generateToken(loginDto.getEmail());
-
+            logger.info("KD:l111:login:UserServiceImpl:Token Created");
             EmailDetails loginAlert = EmailDetails.builder()
                     .subject("You're logged in to your account.")
                     .recipient(loginDto.getEmail())
                     .messageBody("You logged into your account. If you did not initiate this request, please contact your bank")
                     .build();
+            logger.info("KD:l117:login:UserServiceImpl:Email Built");
             emailService.sendEmailAlert(loginAlert);
-
+            logger.info("KD:l119:login:UserServiceImpl:Email Sent");
             return BankResponse.builder()
                     .responseCode("Login Success")
                     .responseMessage(token)
