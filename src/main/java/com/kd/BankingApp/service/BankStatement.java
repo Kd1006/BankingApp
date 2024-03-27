@@ -1,7 +1,4 @@
-
 package com.kd.BankingApp.service;
-
-
 import com.itextpdf.text.*;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.PdfPCell;
@@ -28,7 +25,6 @@ import java.util.stream.Collectors;
 @Component
 @AllArgsConstructor
 @Slf4j
-
 public class BankStatement {
     // retrieve list of transactions given date range and account number
     // generate a pdf file of transaction
@@ -143,25 +139,14 @@ public class BankStatement {
 
             emailService.sendEmailWithAttachment(emailDetails);
 
-
-
-
         } catch (DocumentException | IOException e) {
             log.error("Error generating a bank statement");
         }
-
 
         return transactionList;
 
     }
 }
-
-
-
-
-
-
-
 
 
 

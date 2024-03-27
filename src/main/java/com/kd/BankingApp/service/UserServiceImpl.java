@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -45,8 +44,6 @@ public class UserServiceImpl implements UserService {
     public UserServiceImpl() {
 
     }
-
-
     @Override
     public BankResponse createAccount(UserRequest userRequest) {
         //Check if the user already exists
@@ -58,7 +55,6 @@ public class UserServiceImpl implements UserService {
                     .accountInfo(null)
                     .build();
         }
-
         User newUser = User.builder()
                 .firstName(userRequest.getFirstName())
                 .lastName(userRequest.getLastName())
@@ -98,7 +94,6 @@ public class UserServiceImpl implements UserService {
 
                 .build();
     }
-
     public BankResponse login(LoginDto loginDto) {
         logger.info(loginDto.toString());
         logger.info("KD:l103:login:UserServiceImpl:entering login");
@@ -130,6 +125,33 @@ public class UserServiceImpl implements UserService {
                     .build();
         }
     }
+
+//    @Override
+//    public void deleteById(Long id) {
+//        userRepository.deleteUserById(id);
+//    }
+//
+//    @Override
+//    public BankResponse updateById(Long id, UpdateRequest updateRequest) {
+//        boolean isAccountExist = userRepository.existsByAccountNumber(updateRequest.getAccountNumber());
+//        if (!isAccountExist) {
+//            return BankResponse.builder()
+//                    .responseCode(AccountUtils.ACCOUNT_NOT_EXIST_CODE)
+//                    .responseMessage(AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE)
+//                    .accountInfo(null)
+//                    .build();
+//        }
+//        User foundUser = userRepository.findByAccountNumber(updateRequest.getAccountNumber());
+//        return BankResponse.builder()
+//                .responseCode(AccountUtils.ACCOUNT_FOUND_CODE)
+//                .responseMessage(AccountUtils.ACCOUNT_FOUND_SUCCESS)
+//                .accountInfo(AccountInfo.builder()
+//                        .accountBalance(foundUser.getAccountBalance())
+//                        .accountNumber(updateRequest.getAccountNumber())
+//                        .accountName(foundUser.getFirstName() + " " + foundUser.getLastName() + " " + foundUser.getOtherName())
+//                        .build())
+//                .build();
+//    }
 
 
     @Override
@@ -165,7 +187,6 @@ public class UserServiceImpl implements UserService {
         User foundUser = userRepository.findByAccountNumber(request.getAccountNumber());
         return foundUser.getFirstName() + " " + foundUser.getLastName() + " " + foundUser.getOtherName();
     }
-
     @Override
     public BankResponse creditAccount(CreditDebitRequest request) {
         // checking if the account exists
@@ -189,7 +210,6 @@ public class UserServiceImpl implements UserService {
                 .amount(request.getAmount())
                 .build();
         transactionService.saveTransaction(transactionDto);
-
         return BankResponse.builder()
                 .responseCode(AccountUtils.ACCOUNT_CREDITED_SUCCESS)
                 .responseMessage(AccountUtils.ACCOUNT_CREDITED_SUCCESS_MESSAGE)
@@ -200,7 +220,6 @@ public class UserServiceImpl implements UserService {
                         .build())
                 .build();
     }
-
     @Override
     public BankResponse debitAccount(CreditDebitRequest request) {
         // check if the account exists
@@ -245,7 +264,6 @@ public class UserServiceImpl implements UserService {
                     .build();
         }
     }
-
     @Override
     public BankResponse transfer(TransferRequest request) {
         //get the account to debit
@@ -305,6 +323,9 @@ public class UserServiceImpl implements UserService {
                 .build();
 
     }
+
+
+
 
 //    public static void main(String[] args) {
 //        UserServiceImpl userService = new UserServiceImpl();

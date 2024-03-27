@@ -10,6 +10,15 @@ public interface UserService {
    BankResponse debitAccount(CreditDebitRequest request);
    BankResponse transfer(TransferRequest request);
    BankResponse login(LoginDto loginDto);
+//   void deleteById(Long id);
+//   BankResponse updateById(Long id, UpdateRequest request);
+
+
+
+
+
+
+
 
 
 

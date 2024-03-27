@@ -50,6 +50,5 @@ public class BankingAppApplication {
 		SpringApplication.run(BankingAppApplication.class, args);
 		logger.info("Application started successfully!");
 	}
-
 }
 //http://localhost:8080/swagger-ui/index.html
